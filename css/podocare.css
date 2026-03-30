@@ -1,0 +1,497 @@
+/* ============================================================
+   PODOCARE — REFINED PREMIUM CSS
+   Alta Costura / Clínica de Luxo (Editorial Aesthetic)
+============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ── 1. RESET & VARIÁVEIS CSS ─────────────────────────────── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Aesthetics */
+  --bg: #F5F4F0;       /* Alabaster / Nude */
+  --bg2: #FFFFFF;      /* Branco puro para sobreposição */
+  --bg3: #EBEAE3;      /* Nude mais escuro para hovers */
+  
+  --border: #181816;   /* Borda estrutural dura (brutal/editorial) */
+  --border-light: #A19F9D; /* Escurecido para melhor contraste */
+  
+  --text: #111110;     /* Preto Off muito focado */
+  --muted: #61605B;    /* Cinza terroso quente */
+  --muted2: #807E78;
+  
+  --primary: #2C4A3B;  /* Verde Sálvia Premium / Forest */
+  --primary-light: #E1E8E4;
+  --primary-mid: #AAB9AF;
+  
+  --accent: #A68A64;   /* Ouro Antigo / Muted Gold */
+  
+  /* Semânticas refinadas */
+  --sem-green: #295F43;
+  --sem-green-l: #E8F0EB;
+  --sem-red:   #8C2B21;
+  --sem-red-l: #F5EAE9;
+  --sem-amber: #9E6B1D;
+  --sem-amber-l: #F4EFEB;
+  
+  /* O Fim da "Cara de IA": NADA de bordas redondas */
+  --radius: 0px;       
+  --radius2: 0px;
+  
+  /* Tipografia: Sans limpo pra dados, serif luxuoso pra display */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  /* Zero sombras flutuantes coloridas */
+  --shadow: none;      
+  --shadow-hover: 0 10px 40px rgba(0,0,0,0.06); 
+}
+
+/* ── 2. BASE ──────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button        { cursor: pointer; font-family: inherit; }
+input, select,
+textarea      { font-family: inherit; }
+a             { text-decoration: none; color: inherit; }
+
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--text); } /* Scroll dark editorial */
+
+/* Páginas */
+.page        { display: none; min-height: 100vh; }
+.page.active { display: flex; flex-direction: column; }
+/* Animação removida temporariamente para debug de visibilidade */
+@keyframes fadeIn { from { opacity: 1; } to { opacity: 1; } }
+
+/* ── 3. COMPONENTES GLOBAIS ───────────────────────────────── */
+
+/* Toast (Notificações super contidas) */
+#toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--text); border: 1px solid var(--border);
+  color: #fff; padding: 14px 20px;
+  font-size: 13px; font-weight: 500; min-width: 280px;
+  animation: slideIn .4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+.toast.success { border-left: 4px solid var(--sem-green); }
+.toast.error   { border-left: 4px solid var(--sem-red); }
+.toast.info    { border-left: 4px solid var(--primary); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Modal de Confirmação Editoral */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(17, 17, 16, 0.4); backdrop-filter: blur(4px);
+  z-index: 500; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border: 2px solid var(--border);
+  padding: 40px; max-width: 440px; width: 90%;
+  animation: fadeUp .4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 20px 20px 0px rgba(0,0,0,0.03); /* Sombra dura brutalista leve */
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.modal-icon  { display: none; } /* Removido pra ficar mais clean */
+.modal-title { font-family: var(--font-serif); font-size: 28px; font-weight: 600; margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.02em; }
+.modal-desc  { font-size: 14px; color: var(--muted); margin-bottom: 32px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+/* Botões */
+.btn {
+  width: 100%; padding: 14px 24px; border: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: transparent; color: var(--text);
+}
+.btn-primary {
+  background: var(--text); color: var(--bg2);
+}
+.btn-primary:hover {
+  background: var(--primary); border-color: var(--primary); color: #fff;
+}
+.btn-primary:disabled { opacity: 0.5; pointer-events: none; }
+
+.btn-outline { background: var(--bg); border: 1px solid var(--border-light); color: var(--muted); }
+.btn-outline:hover { background: var(--border); color: var(--bg2); border-color: var(--border); }
+
+.btn-danger { background: transparent; border-color: var(--sem-red); color: var(--sem-red); }
+.btn-danger:hover { background: var(--sem-red); color: #fff; }
+
+.btn-sm   { width: auto; padding: 10px 18px; font-size: 11px; }
+
+/* Inputs e Forms */
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block; font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+  color: var(--muted); margin-bottom: 8px; letter-spacing: .08em; text-transform: uppercase;
+}
+.input-wrap     { position: relative; }
+.input-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .3; pointer-events: none; width: 14px; height: 14px; }
+.input {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 14px 14px 14px 40px; font-size: 14px; color: var(--text); 
+  outline: none; transition: .3s;
+}
+.input:focus { border-color: var(--text); background: var(--bg); }
+.input::placeholder { color: var(--muted2); font-weight: 300; }
+.input-plain { padding-left: 14px; }
+
+/* Select */
+.select {
+  background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 10px 16px; font-size: 13px; color: var(--text); outline: none;
+  cursor: pointer; transition: .2s; font-family: var(--font-sans);
+}
+.select:focus { border-color: var(--text); }
+
+/* Common Cards */
+.card {
+  background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 32px; /* Espaçamento mais luxuoso */
+}
+
+/* Badges e Informações Inline */
+.hint-box {
+  background: var(--bg); border: 1px solid var(--border-light);
+  padding: 16px 20px; margin-bottom: 24px;
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+}
+.hint-box strong { color: var(--text); font-weight: 600; }
+
+.badge      { display: inline-flex; align-items: center; padding: 4px 12px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--text); }
+.badge-blue { background: var(--text); color: var(--bg2); }
+
+.new-dot {
+  display: inline-block; width: 6px; height: 6px; background: var(--sem-red); margin-left: 6px;
+  animation: blink 2s infinite; vertical-align: middle;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ── 4. HEADER ────────────────────────────────────────────── */
+.header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 0 40px; height: 80px; /* Maior respiro */
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-logo  { display: flex; align-items: center; gap: 14px; }
+.logo-mark    { display: flex; align-items: center; justify-content: center; width: 40px; padding: 0; }
+.logo-text    { font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.logo-text span { font-weight: 400; color: var(--muted); font-style: italic; }
+
+.header-nav { display: flex; align-items: center; gap: 8px; }
+.nav-btn {
+  background: none; border: none; padding: 10px 20px;
+  font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); transition: color .3s;
+  display: flex; align-items: center; gap: 8px;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--text); font-weight: 700; border-bottom: 2px solid var(--text); padding-bottom: 8px; margin-top: 2px; }
+.nav-btn svg { width: 14px; height: 14px; }
+
+.header-right { display: flex; align-items: center; gap: 20px; }
+.user-chip {
+  font-size: 12px; color: var(--text); font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+}
+.role-badge {
+  font-size: 9px; padding: 3px 8px; background: var(--bg); border: 1px solid var(--border-light);
+  font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text);
+}
+.role-master  { border-color: var(--accent); color: var(--accent); background: transparent; }
+
+.logout-btn {
+  background: none; border: none; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); transition: .3s; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
+}
+.logout-btn:hover { color: var(--sem-red); text-decoration-color: var(--sem-red); }
+
+/* ── 5. LAYOUT PRINCIPAL & TABS ───────────────────────────── */
+.main-content { flex: 1; overflow-y: auto; padding: 100px 40px 48px; }
+.container    { max-width: 1200px; margin: 0 auto; }
+.container-sm { max-width: 800px;  margin: 0 auto; }
+
+.page-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  flex-wrap: wrap; gap: 24px; margin-bottom: 48px; border-bottom: 1px solid var(--border); padding-bottom: 24px;
+}
+.page-title    { font-family: var(--font-serif); font-size: 42px; font-weight: 500; color: var(--text); line-height: 1.1; letter-spacing: -0.02em; }
+.page-subtitle { font-family: var(--font-sans); font-size: 13px; color: var(--muted); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.filters { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.admin-tab-panel, .tab-panel { display: none; animation: fadeIn .4s ease; }
+.admin-tab-panel.active-tab, .tab-panel.active { display: block; }
+
+.tabs-nav {
+  display: flex; border-bottom: 1px solid var(--border-light);
+  margin-bottom: 32px; gap: 32px; padding-bottom: 0; background: transparent; border-radius: 0;
+}
+.tab-btn {
+  padding: 0 0 16px 0; border: none; background: transparent;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); transition: .3s; position: relative; border-radius: 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.tab-btn::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 1px; background: var(--text);
+  transform: scaleX(0); transform-origin: right; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); background: transparent; box-shadow: none; font-weight: 700; }
+.tab-btn.active::after { transform: scaleX(1); transform-origin: left; height: 2px; }
+
+/* Grid Dashboard */
+.tables-grid { display: grid; grid-template-columns: 1fr 400px; gap: 40px; }
+.section-card { border-top: 2px solid var(--border); padding-top: 24px; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;
+}
+.section-title { font-family: var(--font-serif); font-weight: 600; font-size: 24px; color: var(--text); display: flex; align-items: center; gap: 12px; letter-spacing: -0.01em; }
+
+/* ── 6. PÁGINAS CENTRALIZADAS (Auth) ──────────────────────── */
+.centered-page {
+  align-items: center; justify-content: center; background: var(--bg);
+}
+.auth-box { width: 100%; max-width: 440px; padding: 40px; background: var(--bg2); border: 1px solid var(--border); box-shadow: 20px 20px 0px rgba(0,0,0,0.03); }
+.auth-header { text-align: center; margin-bottom: 40px; border-bottom: 1px solid var(--border-light); padding-bottom: 24px; }
+.auth-logo { margin: 0 auto 20px; display: flex; justify-content: center; }
+/* Redução de zoom da logo na Auth */
+.logo-img-auth { width: 140px; height: auto; object-fit: contain; }
+.auth-title { font-family: var(--font-serif); font-size: 32px; font-weight: 600; color: var(--text); line-height: 1.1; }
+.auth-sub   { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 8px; }
+
+.auth-tabs { display: flex; gap: 24px; margin-bottom: 32px; border-bottom: 1px solid var(--border-light); padding: 0; background: transparent; border-radius: 0; }
+.auth-tab  { flex: none; background: transparent; padding: 0 0 12px 0; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; border-radius: 0; position: relative; }
+.auth-tab.active { background: transparent; box-shadow: none; color: var(--text); font-weight: 600; }
+.auth-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--text); }
+.auth-panel .card { border: none; padding: 0; box-shadow: none; }
+
+/* ── 7. CARDS DE ESTATÍSTICAS (O Fim do Arco-Íris) ────────── */
+.stats-row  { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 48px; border-bottom: 1px solid var(--border); padding-bottom: 48px; }
+.podo-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-bottom: 40px; border-bottom: 1px solid var(--border-light); padding-bottom: 40px; }
+
+/* Transformando os cartões de stats numa moldura editorial refinada */
+.stat-card {
+  border: 1px solid var(--border-light);
+  padding: 32px 24px;
+  background: var(--bg2);
+  position: relative;
+  transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+/* Efeito de revelar estrutura no hover (Alto contraste) */
+.stat-card:hover { border-color: var(--border); background: var(--bg); transform: translateY(-4px); box-shadow: 8px 8px 0px rgba(0,0,0,0.05); }
+
+/* Removemos a herança de cores das classes antigas no CSS pra forçar estilo monocromático de luxo */
+.stat-card.blue, .stat-card.green, .stat-card.amber, .stat-card.cyan {
+  background: var(--bg2); box-shadow: none; color: var(--text);
+}
+.stat-card.blue:hover, .stat-card.green:hover, .stat-card.amber:hover, .stat-card.cyan:hover {
+  background: var(--text); color: var(--bg2); box-shadow: none;
+}
+
+.stat-card::after, .stat-card::before { display: none; } /* Sem bolinhas de decoração inúteis */
+
+.stat-label {
+  font-family: var(--font-sans); font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .15em;
+  color: var(--muted); margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;
+  transition: .4s;
+}
+.stat-value {
+  font-family: var(--font-serif); font-size: 40px; font-weight: 400; /* Serif gigante clássico */
+  color: var(--text); line-height: 1; letter-spacing: -0.03em;
+  transition: .4s;
+}
+.stat-sub {
+  font-family: var(--font-sans); font-size: 11px; color: var(--muted); margin-top: 12px; font-weight: 400; transition: .4s;
+}
+
+/* Os SVGs ficam preto/branco minimalistas */
+.stat-icon {
+  position: absolute; right: 24px; top: 24px;
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--text); opacity: 0.2; transition: .4s;
+}
+
+/* Hover inversion definitions */
+.stat-card:hover .stat-label { color: var(--bg); border-color: rgba(255,255,255,0.2); }
+.stat-card:hover .stat-sub   { color: rgba(255,255,255,0.6); }
+.stat-card:hover .stat-value { color: var(--bg2); }
+.stat-card:hover .stat-icon  { color: var(--bg2); opacity: 0.5; }
+
+/* ── 8. TABELAS E LISTAS ──────────────────────────────────── */
+.data-table           { width: 100%; border-collapse: collapse; }
+.data-table th        { border-bottom: 1px solid var(--text); padding: 0 12px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: var(--text); font-weight: 600; text-align: left; }
+.data-table td        { padding: 18px 12px; border-bottom: 1px solid var(--border-light); vertical-align: top; font-size: 14px; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td      { background: var(--bg3); }
+
+.td-time  { font-family: var(--font-sans); font-weight: 600; font-size: 14px; color: var(--text); }
+.td-date  { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.td-name  { font-weight: 600; color: var(--text); font-size: 15px; }
+.td-prof  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.td-price { font-family: var(--font-serif); font-size: 18px; font-weight: 500; text-align: right; color: var(--text); letter-spacing: 0.02em; }
+
+/* Labels de status inline (em vez de badge colorido) */
+.svc-badge { display: inline-block; margin-top: 8px; font-size: 9px; padding: 2px 0; border-bottom: 1px solid var(--muted); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; background: transparent; border-radius: 0; }
+
+/* Lista Recentes */
+.past-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border-light); }
+.past-item:last-child { border-bottom: none; }
+.past-name  { font-weight: 600; font-size: 14px; color: var(--text); }
+.past-meta  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.past-price { font-family: var(--font-serif); font-size: 18px; font-weight: 500; color: var(--text); }
+
+/* ── 9. CARDS DE AGENDAMENTO (Modernizados) ───────────────── */
+.apt-card {
+  background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 24px; display: flex; align-items: center; gap: 24px;
+  margin-bottom: 16px; transition: .3s;
+}
+.apt-card:hover { border-color: var(--text); transform: translateX(4px); }
+.apt-card.new-apt { border-left: 4px solid var(--text); animation: highlightNew 2s ease 3; }
+@keyframes highlightNew { 0%,100% { background: var(--bg2); } 50% { background: var(--bg); } }
+
+.apt-time-col   { text-align: left; min-width: 80px; padding-right: 24px; border-right: 1px solid var(--border-light); }
+.apt-time       { font-family: var(--font-serif); font-size: 28px; font-weight: 500; color: var(--text); line-height: 1; margin-bottom: 6px; }
+.apt-date-small { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+.apt-info { flex: 1; }
+.apt-name { font-family: var(--font-serif); font-size: 20px; font-weight: 600; color: var(--text); }
+.apt-prof { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.apt-svc  { display: inline-block; margin-top: 10px; font-size: 9px; padding: 4px 10px; background: var(--bg); border: 1px solid var(--border-light); color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; }
+
+.apt-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.apt-price { font-family: var(--font-serif); font-weight: 500; font-size: 20px; color: var(--text); }
+
+
+/* ── 10. STATUS PILLS (Mais formais/impressos) ────────────── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 9px; padding: 4px 10px; border: 1px solid currentColor;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; background: transparent !important;
+}
+.status-pill::before { content: ''; width: 4px; height: 4px; background: currentColor; }
+.status-confirmed, .status-confirmado { color: var(--sem-amber); }
+.status-completed,  .status-concluido { color: var(--sem-green); }
+.status-cancelled,  .status-cancelado { color: var(--sem-red);   }
+
+/* ── 11. PAINEL DA PODÓLOGA ───────────────────────────────── */
+.welcome-row { margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+.welcome-name{ font-family: var(--font-serif); font-size: 48px; font-weight: 400; color: var(--text); letter-spacing: -0.02em; line-height: 1; margin-bottom: 12px; }
+.welcome-sub { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── 12. FINANCEIRO ───────────────────────────────────────── */
+.fin-card { background: var(--text); color: var(--bg2); padding: 40px; margin-bottom: 24px; box-shadow: 12px 12px 0px rgba(0,0,0,0.05); }
+.fin-card-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; }
+.fin-icon  { display: none; } /* Remover ícone decorativo, focando no texto */
+.fin-label { font-size: 11px; text-transform: uppercase; letter-spacing: .15em; color: rgba(255,255,255,0.5); font-weight: 600; }
+.fin-value { font-family: var(--font-serif); font-size: 48px; font-weight: 400; line-height: 1; color: var(--bg2); }
+.fin-desc  { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 12px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+/* ── 13. SERVIÇOS ─────────────────────────────────────────── */
+.svc-row {
+  background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; transition: .3s;
+}
+.svc-row:hover { border-color: var(--text); }
+.svc-icon  { display: none; } 
+.svc-name  { font-family: var(--font-serif); font-weight: 600; font-size: 20px; color: var(--text); }
+.svc-meta  { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.svc-price { font-family: var(--font-serif); font-weight: 500; font-size: 20px; color: var(--text); }
+
+/* ── 14. FORMULÁRIOS DE ADIÇÃO ────────────────────────────── */
+.add-form {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 32px; margin-bottom: 32px;
+}
+.add-form-grid    { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.add-form-actions { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-light); padding-top: 24px; }
+
+.add-input {
+  background: var(--bg2); border: 1px solid var(--border-light);
+  padding: 12px; font-size: 14px; color: var(--text); outline: none; transition: .3s;
+  font-family: var(--font-sans); width: 100%;
+}
+.add-input:focus { border-color: var(--text); border-width: 1px; box-shadow: 4px 4px 0px rgba(0,0,0,0.05); }
+
+/* ── 15. CONFIGURAÇÕES & CONVITES ─────────────────────────── */
+.settings-header { display: flex; align-items: flex-end; gap: 24px; margin-bottom: 48px; border-bottom: 1px solid var(--border); padding-bottom: 24px;}
+.settings-icon   { display: none; }
+.settings-title  { font-family: var(--font-serif); font-size: 36px; font-weight: 500; line-height: 1.1; letter-spacing: -0.01em; }
+.settings-sub    { color: var(--muted); font-size: 12px; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.item-row { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: var(--bg2); border: 1px solid var(--border-light); margin-bottom: 12px; transition: .3s; }
+.item-row:hover { border-color: var(--text); transform: translateX(4px); }
+.item-name { font-family: var(--font-sans); font-weight: 600; font-size: 15px; }
+.item-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.invite-form       { background: var(--bg2); border: 1px solid var(--border); padding: 32px; margin-bottom: 32px; }
+.invite-form-title { font-family: var(--font-serif); font-weight: 600; font-size: 24px; color: var(--text); margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px; }
+.invite-form-title svg { display: none; } /* Cleanup icon */
+.invite-grid       { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+
+/* ── 16. ESTADOS VAZIOS E LOADING ─────────────────────────── */
+.empty-state     { text-align: center; padding: 80px 20px; color: var(--muted); border: 1px dashed var(--border-light); background: transparent; }
+.empty-state svg { opacity: .2; margin: 0 auto 20px; display: block; width: 32px; height: 32px; }
+.empty-state p   { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.loading { text-align: center; padding: 48px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+.spin    { display: inline-block; width: 16px; height: 16px; border: 1px solid var(--border-light); border-top-color: var(--text); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 12px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── LOGO (Sóbria e encaixada) ───────────────────────────── */
+/* Logo do Header: Sóbria e no tamanho real */
+.logo-img-header { width: 44px; height: 44px; object-fit: contain; }
+/* Removendo o background e a caixa em volta da logo no header */
+.header-logo { gap: 0; }
+.logo-mark { background: transparent; overflow: visible; width: auto; margin-right: 16px; }
+.logo-text { display: flex; } /* Reativado para visibilidade */
+
+/* ── 17. RESPONSIVO ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .tables-grid  { grid-template-columns: 1fr; }
+  .stats-row    { grid-template-columns: 1fr 1fr; }
+  .invite-grid  { grid-template-columns: 1fr; }
+  .main-content { padding: 32px 24px; }
+}
+
+@media (max-width: 600px) {
+  .stats-row      { grid-template-columns: 1fr; }
+  .podo-stats     { grid-template-columns: 1fr; }
+  .add-form-grid  { grid-template-columns: 1fr; }
+  .header         { padding: 0 20px; height: 64px; }
+  .main-content   { padding: 24px 16px; }
+  .page-title     { font-size: 32px; }
+  .logo-img-header{ transform: scale(2.5) translateY(2px); }
+  .welcome-name   { font-size: 36px; }
+}
