@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodoCare — Sistema de Gestão</title>
+
+  <!--
+    CSP: restringe origens de scripts, estilos e conexões.
+    script-src-elem e style-src-elem são necessários para browsers modernos
+    (Chrome 80+, Firefox 75+) que não usam script-src como fallback.
+  -->
+  <!-- [SEC-NOTE] CSP via meta tag não funciona em file://
+       Em servidor HTTP, adicione o header no servidor. -->
+
+  <!-- Supabase JS SDK (via CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Google Fonts: Inter (Sans) & Cormorant Garamond (Serif) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Estilos da aplicação -->
+  <link rel="stylesheet" href="css/podocare.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST CONTAINER — Notificações flutuantes (canto inferior direito)
+════════════════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — Confirmação de ações destrutivas (remover, etc.)
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg width="20" height="20" fill="none" stroke="var(--red)" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9"  x2="12"   y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-desc"  id="modal-desc"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger  btn-sm" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PÁGINA: SETUP
+     Exibida na primeira vez, para colar as credenciais do Supabase.
+════════════════════════════════════════════════════════════ -->
+<div class="page centered-page" id="page-setup">
+  <div class="auth-box">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <img src="logo-podocare-removebg-preview.png" alt="PodoCare" class="logo-img-auth" />
+      </div>
+      <div class="auth-title">Configuração Inicial</div>
+      <div class="auth-sub">Cole as credenciais do seu projeto Supabase</div>
+    </div>
+    <div class="card">
+      <div class="hint-box">
+        <strong>Onde encontrar?</strong><br />
+        Painel Supabase → seu projeto → <em>Project Settings → API</em>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project URL</label>
+        <input class="input input-plain" type="url" id="cfg-url" placeholder="https://xxxx.supabase.co" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anon / Public Key</label>
+        <input class="input input-plain" type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." />
+      </div>
+      <button class="btn btn-primary" onclick="saveAndConnect()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Conectar
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="resetConfig()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline">
+        Limpar e reconectar
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PÁGINA: AUTH
+     Login e criação de conta.
+════════════════════════════════════════════════════════════ -->
+<div class="page centered-page active" id="page-auth">
+  <div class="auth-box">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <img src="logo-podocare-removebg-preview.png" alt="PodoCare" class="logo-img-auth" />
+      </div>
+      <div class="auth-title">PodoCare</div>
+      <div class="auth-sub">Sistema de Gestão em Podologia</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authTab('login', this)">Entrar</button>
+      <button class="auth-tab"        onclick="authTab('signup', this)">Criar Conta</button>
+    </div>
+
+    <!-- Painel: Login -->
+    <div class="auth-panel active" id="auth-login">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input class="input" type="email" id="login-email" placeholder="seu@email.com" autocomplete="email" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+                   onkeydown="if(event.key==='Enter') doLogin()" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="login-btn" onclick="doLogin()">
+          Entrar
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel: Criar Conta -->
+    <div class="auth-panel" id="auth-signup">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Nome Completo</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input class="input" type="text" id="signup-name" placeholder="Seu Nome Completo" autocomplete="name" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input class="input" type="email" id="signup-email" placeholder="seu@email.com" autocomplete="email" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" type="password" id="signup-password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="signup-btn" onclick="doSignup()">Criar Conta</button>
+      </div>
+    </div>
+
+    <!-- Painel: Completar Perfil (Convite) -->
+    <div class="auth-panel" id="auth-onboarding">
+      <div class="card">
+        <div class="hint-box" style="margin-bottom:20px;text-align:center">
+          <strong>Bem-vinda! 👋</strong><br />Defina seu nome e crie uma senha para acessar o sistema nas próximas vezes.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome Completo</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input class="input" type="text" id="ob-name" placeholder="Ex: Ana Silva" autocomplete="name" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nova Senha</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" type="password" id="ob-password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="ob-btn" onclick="doOnboarding()">Salvar e Entrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PÁGINA: ADMIN
+     Dashboard de performance e agenda completa.
+     Acesso: MASTER e ADMIN
+════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">
+        <img src="logo-podocare-removebg-preview.png" alt="PodoCare" class="logo-img-header" />
+      </div>
+      <div class="logo-text">Podo<span>Care</span></div>
+    </div>
+
+    <nav class="header-nav">
+      <button class="nav-btn active" id="nav-dashboard" onclick="adminTab('dashboard', this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Performance</span>
+      </button>
+      <button class="nav-btn" id="nav-agenda" onclick="adminTab('agenda', this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Agenda</span>
+        <span id="new-apt-dot" style="display:none"><span class="new-dot"></span></span>
+      </button>
+      <!-- Visível apenas para MASTER -->
+      <button class="nav-btn" id="nav-settings-btn" onclick="goSettings()" style="display:none">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M12 2v2M4.93 4.93l1.41 1.41M2 12h2M4.93 19.07l1.41-1.41M12 22v-2M19.07 19.07l-1.41-1.41M22 12h-2"/></svg>
+        <span>Configurações</span>
+      </button>
+    </nav>
+
+    <div class="header-right">
+      <div class="user-chip" id="admin-user-chip">—</div>
+      <button class="logout-btn" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Aba: Performance / Dashboard -->
+      <div id="admin-dashboard" class="admin-tab-panel active-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Performance</div>
+            <div class="page-subtitle">Visão geral da clínica</div>
+          </div>
+          <div class="filters">
+            <select class="select" id="filter-prof"   onchange="refreshAdmin()"><option value="todos">Toda a equipe</option></select>
+            <select class="select" id="filter-period" onchange="refreshAdmin()">
+              <option value="hoje">Hoje</option>
+              <option value="7dias">Últimos 7 dias</option>
+              <option value="14dias">Últimos 14 dias</option>
+              <option value="30dias">Últimos 30 dias</option>
+              <option value="custom">Período Personalizado</option>
+            </select>
+            <div id="custom-date-container" style="display:none; align-items:center; gap:6px;">
+              <input type="date" class="add-input" id="filter-start" onchange="refreshAdmin()" style="width:130px; padding:7px; font-size:12px; border-color:var(--border)" />
+              <span style="font-size:12px; color:var(--muted); font-weight:600">até</span>
+              <input type="date" class="add-input" id="filter-end" onchange="refreshAdmin()" style="width:130px; padding:7px; font-size:12px; border-color:var(--border)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards de estatísticas (Sem cores fixas, estilo editorial monocromático) -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Faturamento do Período</div>
+            <div class="stat-value" id="admin-revenue"><span class="spin"></span></div>
+            <div class="stat-sub" id="admin-count">0 atendimento(s)</div>
+            <div class="stat-icon">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ticket Médio</div>
+            <div class="stat-value" id="admin-ticket">—</div>
+            <div class="stat-sub">Por atendimento</div>
+            <div class="stat-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Atendimentos</div>
+            <div class="stat-value" id="admin-count-val">—</div>
+            <div class="stat-sub">No período</div>
+            <div class="stat-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pacientes Únicos</div>
+            <div class="stat-value" id="admin-clients">—</div>
+            <div class="stat-sub">No período</div>
+            <div class="stat-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          </div>
+        </div>
+
+        <!-- Tabelas do dashboard -->
+        <div class="tables-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-title">
+                <svg width="15" height="15" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Próximos Atendimentos
+              </div>
+              <span class="badge badge-blue" id="upcoming-count">—</span>
+            </div>
+            <div id="upcoming-table"><div class="loading"><span class="spin"></span>Carregando...</div></div>
+          </div>
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-title">
+                <svg width="15" height="15" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Recentes
+              </div>
+            </div>
+            <div id="past-list"><div class="loading"><span class="spin"></span>Carregando...</div></div>
+          </div>
+        </div>
+      </div><!-- /admin-dashboard -->
+
+      <!-- Aba: Agenda Completa -->
+      <div id="admin-agenda" class="admin-tab-panel">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Agenda Completa</div>
+            <div class="page-subtitle">Todos os atendimentos</div>
+          </div>
+        </div>
+        <div class="filters" style="margin-bottom:20px">
+          <select class="select" id="agenda-filter-prof" onchange="renderFullAgenda()"><option value="todos">Toda a equipe</option></select>
+          <select class="select" id="agenda-filter-status" onchange="renderFullAgenda()">
+            <option value="todos">Todos os status</option>
+            <option value="confirmado">Confirmados</option>
+            <option value="concluido">Concluídos</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        <div id="full-agenda-list"><div class="loading"><span class="spin"></span>Carregando...</div></div>
+      </div><!-- /admin-agenda -->
+
+    </div>
+  </main>
+</div><!-- /page-admin -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PÁGINA: PODÓLOGA
+     Agenda do dia, financeiro e gerência de serviços próprios.
+     Acesso: PODOLOGA
+════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-podologa">
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">
+        <img src="logo-podocare-removebg-preview.png" alt="PodoCare" class="logo-img-header" />
+      </div>
+      <div class="logo-text">Podo<span>Care</span></div>
+    </div>
+    <div class="header-nav"></div>
+    <div class="header-right">
+      <div class="user-chip" id="podologa-user-chip">—</div>
+      <button class="logout-btn" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container-sm">
+
+      <div class="welcome-row">
+        <div class="welcome-name" id="podologa-welcome">Olá! 👋</div>
+        <div class="welcome-sub">Acompanhe sua agenda e seus ganhos.</div>
+      </div>
+
+      <!-- Mini-cards de stats da podóloga -->
+      <div class="podo-stats">
+        <div class="stat-card">
+          <div class="stat-label">Ganhos Hoje</div>
+          <div class="stat-value" id="b-today-revenue">—</div>
+          <div class="stat-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Agendados Hoje</div>
+          <div class="stat-value" id="b-today-count">—</div>
+          <div class="stat-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Concluídos Hoje</div>
+          <div class="stat-value" id="b-today-clients">—</div>
+          <div class="stat-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Navegação por abas -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="podologaTab('agenda', this)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Agenda
+        </button>
+        <button class="tab-btn" onclick="podologaTab('financeiro', this)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Financeiro
+        </button>
+        <button class="tab-btn" onclick="podologaTab('servicos', this)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Serviços
+        </button>
+      </div>
+
+      <!-- Aba: Agenda -->
+      <div class="tab-panel active" id="tab-agenda">
+        <div style="font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Agenda de Hoje
+        </div>
+        <div id="b-today-apts"><div class="loading"><span class="spin"></span>Carregando...</div></div>
+        <div style="font-weight:700;font-size:14px;margin:24px 0 14px">Histórico Recente</div>
+        <div id="b-history"></div>
+      </div>
+
+      <!-- Aba: Financeiro -->
+      <div class="tab-panel" id="tab-financeiro">
+        <div class="filters" style="margin-bottom:24px; display:flex; gap:12px; flex-wrap:wrap">
+          <select class="select" id="podo-filter-period" onchange="refreshPodologaFin()">
+            <option value="hoje">Hoje</option>
+            <option value="7dias">Últimos 7 dias</option>
+            <option value="30dias" selected>Últimos 30 dias</option>
+            <option value="custom">Período Personalizado</option>
+          </select>
+          <div id="podo-custom-date-container" style="display:none; align-items:center; gap:6px;">
+            <input type="date" class="add-input" id="podo-filter-start" onchange="refreshPodologaFin()" style="width:130px; padding:7px; font-size:12px; border-color:var(--border)" />
+            <span style="font-size:12px; color:var(--muted); font-weight:600">até</span>
+            <input type="date" class="add-input" id="podo-filter-end" onchange="refreshPodologaFin()" style="width:130px; padding:7px; font-size:12px; border-color:var(--border)" />
+          </div>
+        </div>
+        <div id="b-fin-cards"></div>
+      </div>
+
+      <!-- Aba: Serviços -->
+      <div class="tab-panel" id="tab-servicos">
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;font-size:14px;color:var(--muted)">Estes são os serviços globais definidos pela liderança que você pode realizar.</div>
+        </div>
+        <div id="b-services-list"><div class="loading"><span class="spin"></span>Carregando...</div></div>
+      </div>
+
+    </div>
+  </main>
+</div><!-- /page-podologa -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PÁGINA: SETTINGS
+     Gerência de equipe e serviços globais da clínica.
+     Acesso: MASTER
+════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-settings">
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">
+        <img src="logo-podocare-removebg-preview.png" alt="PodoCare" class="logo-img-header" />
+      </div>
+      <div class="logo-text">Podo<span>Care</span></div>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn" onclick="goAdmin()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Voltar
+      </button>
+    </nav>
+    <div class="header-right">
+      <button class="logout-btn" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container-sm">
+
+      <div class="settings-header">
+        <div class="settings-icon">
+          <svg width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M12 2v2M4.93 4.93l1.41 1.41M2 12h2M4.93 19.07l1.41-1.41M12 22v-2M19.07 19.07l-1.41-1.41M22 12h-2"/></svg>
+        </div>
+        <div>
+          <div class="settings-title">Configurações</div>
+          <div class="settings-sub">Gerencie podólogas e serviços da clínica. Acesso exclusivo Master.</div>
+        </div>
+      </div>
+
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="settingsTab('profs', this)">Equipe & Acessos</button>
+        <button class="tab-btn"        onclick="settingsTab('services', this)">Serviços</button>
+      </div>
+
+      <!-- Aba: Podólogas -->
+      <div class="tab-panel active" id="stab-profs">
+        <!-- Formulário de convite -->
+        <div class="invite-form">
+          <div class="invite-form-title">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Convidar Nova Podóloga
+          </div>
+          <div class="invite-grid">
+            <div>
+              <div class="form-label">Nome Completo</div>
+              <input class="add-input" type="text"  id="invite-name"  placeholder="Ex: Ana Silva" maxlength="100" />
+            </div>
+            <div>
+              <div class="form-label">E-mail</div>
+              <input class="add-input" type="email" id="invite-email" placeholder="ana@email.com" />
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="inviteProf()" style="width:100%">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.33 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.97-.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Enviar Convite por E-mail
+          </button>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">
+            A podóloga receberá um e-mail com link para definir sua senha e acessar o sistema.
+          </div>
+        </div>
+
+        <!-- Lista da equipe atual (Agenda) -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-weight:700;margin-bottom:16px;font-size:14px;display:flex;align-items:center;gap:8px">
+            <svg width="15" height="15" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Nomes Cadastrados na Agenda
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;margin-top:-10px">Nomes disponíveis para seleção nos agendamentos (não são acessos do sistema).</div>
+          <div id="profs-list"><div class="loading"><span class="spin"></span></div></div>
+        </div>
+
+        <!-- Lista de Usuários Oficiais (Perfis de Acesso) -->
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:8px;font-size:14px;display:flex;align-items:center;gap:8px">
+            <svg width="15" height="15" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style="color:var(--primary)">Controle de Acessos ao Sistema</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Defina quem pode ser Admin (vê o painel Master) e quem é Podóloga. **Apenas você** (Master) tem esse poder.</div>
+          <div id="access-list"><div class="loading"><span class="spin"></span></div></div>
+        </div>
+      </div><!-- /stab-profs -->
+
+      <!-- Aba: Serviços -->
+      <div class="tab-panel" id="stab-services">
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:16px;font-size:14px;display:flex;align-items:center;gap:8px">
+            <svg width="15" height="15" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Adicionar Serviço
+          </div>
+          <div style="display:grid;gap:8px;margin-bottom:14px">
+            <input class="add-input" type="text"   id="s-svc-name"     placeholder="Nome do Serviço"   maxlength="100" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <input class="add-input" type="number" id="s-svc-price"    placeholder="Preço (R$)"        min="0.01" step="0.01" />
+              <input class="add-input" type="number" id="s-svc-duration" placeholder="Duração (min)"     min="1"    max="480" />
+            </div>
+            <button class="btn btn-primary" onclick="addServiceSettings()">+ Adicionar Serviço</button>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">
+              Serviços Cadastrados
+            </div>
+            <div id="services-list"><div class="loading"><span class="spin"></span></div></div>
+          </div>
+        </div>
+      </div><!-- /stab-services -->
+
+    </div>
+  </main>
+</div><!-- /page-settings -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPTS
+     Ordem de carregamento importa:
+     1. utils.js      — funções puras, sem dependências
+     2. auth.js       — depende de utils
+     3. admin.js      — depende de utils e auth
+     4. podologa.js   — depende de utils e auth
+     5. settings.js   — depende de utils e auth
+     6. config.js     — inicializa tudo (deve ser o último)
+════════════════════════════════════════════════════════════ -->
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/podologa.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/config.js"></script>
+
+</body>
+</html>
